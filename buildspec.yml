@@ -1,0 +1,35 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: us-east-1
+    FRONTEND_REPO: 222066942386.dkr.ecr.us-east-1.amazonaws.com/flow-main-frontend
+    BACKEND_REPO: 222066942386.dkr.ecr.us-east-1.amazonaws.com/flow-main-backend
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 222066942386.dkr.ecr.us-east-1.amazonaws.com
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+
+  build:
+    commands:
+      - echo Building frontend image...
+      - docker build -t $FRONTEND_REPO:$IMAGE_TAG ./frontend
+      - echo Building backend image...
+      - docker build -t $BACKEND_REPO:$IMAGE_TAG ./backend
+
+  post_build:
+    commands:
+      - echo Pushing frontend image...
+      - docker push $FRONTEND_REPO:$IMAGE_TAG
+      - echo Pushing backend image...
+      - docker push $BACKEND_REPO:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - printf '[{"name":"frontend","imageUri":"%s"},{"name":"backend","imageUri":"%s"}]' $FRONTEND_REPO:$IMAGE_TAG $BACKEND_REPO:$IMAGE_TAG > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+  discard-paths: yes
