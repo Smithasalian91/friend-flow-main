@@ -1,0 +1,11 @@
+version: 0.0
+os: linux
+files:
+  - source: .
+    destination: /home/ubuntu/app  # or any path on EC2
+
+hooks:
+  AfterInstall:
+    - location: deploy.sh
+      timeout: 300
+      runas: ubuntu
